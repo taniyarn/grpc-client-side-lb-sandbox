@@ -15,6 +15,13 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
+const (
+	keepAliveIdle     = 3 * time.Minute
+	keepAliveInterval = 30 * time.Second
+	timeout           = 5 * time.Second
+	keepAliveRetry    = 3
+)
+
 // proxyServer はクライアントリクエストをバックエンドサーバーに転送するサーバー
 type proxyServer struct {
 	pb.UnimplementedHelloServiceServer
@@ -31,36 +38,32 @@ func main() {
   serverAddr := flag.String("server-addr", "server:50051", "Server address (host:port)")
   flag.Parse()
 
-  ctx := context.Background()
-
   // Dial オプション
   opts := []grpc.DialOption{
     grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
-      d := &net.Dialer{
-        Timeout:   10 * time.Second,
-        KeepAlive: 30 * time.Second,
-        DualStack: true,
-      }
+		d := &net.Dialer{
+			Timeout: timeout,
+			KeepAliveConfig: net.KeepAliveConfig{
+				Enable:   true,
+				Count:    keepAliveRetry,
+				Interval: keepAliveInterval + timeout,
+				Idle:     keepAliveIdle,
+			},
+			DualStack: true,
+		}
       return d.DialContext(ctx, "tcp", addr)
     }),
     grpc.WithTransportCredentials(insecure.NewCredentials()),
-    grpc.WithKeepaliveParams(keepalive.ClientParameters{
-      Time:                10 * time.Second,
-      Timeout:             3 * time.Second,
-      PermitWithoutStream: true,
-    }),
+	grpc.WithKeepaliveParams(keepalive.ClientParameters{
+		Time:                keepAliveInterval,
+		Timeout:             timeout,
+		PermitWithoutStream: true,
+	}),
     grpc.WithDefaultCallOptions(grpc.WaitForReady(true)),
-    grpc.WithDefaultServiceConfig(`
-    {
-      "loadBalancingConfig":[
-        { "round_robin": {} }
-      ]
-    }`),
+    grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"round_robin"}`),
   }
 
-  // dns:/// を付ける
-  target := fmt.Sprintf("dns:///%s", *serverAddr)
-  conn, err := grpc.DialContext(ctx, target, opts...)
+  conn, err := grpc.NewClient(*serverAddr, opts...)
   if err != nil {
     log.Fatalf("failed to dial: %v", err)
   }
@@ -72,8 +75,6 @@ func main() {
 	proxy := &proxyServer{
 	 client: client,
 	}
-
-	log.Printf("NEEEEEEEEw :%d", *proxyPort)
 
 	// プロキシサーバーの起動
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *proxyPort))

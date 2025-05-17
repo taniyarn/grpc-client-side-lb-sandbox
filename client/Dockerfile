@@ -2,11 +2,11 @@ FROM golang:1.24-alpine
 
 WORKDIR /app
 
-COPY go.mod ./
+COPY go.mod go.sum ./
 COPY proto ./proto/
 COPY client ./client/
 
-RUN go mod download
+RUN go mod tidy && go mod download
 
 RUN go build -o /client ./client
 

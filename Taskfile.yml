@@ -14,3 +14,24 @@ tasks:
                    --go-grpc_out=. --go-grpc_opt=paths=source_relative \
                    proto/*.proto
           '
+
+  server:
+    desc: "Start server instances"
+    cmds:
+      - docker-compose up --scale server=3 -d server
+
+  client:
+    desc: "Start proxy server"
+    cmds:
+      - docker-compose up -d proxy
+
+  up:
+    desc: "Start all services (server and proxy)"
+    cmds:
+      - task: server
+      - task: client
+
+  down:
+    desc: "Stop all services"
+    cmds:
+      - docker-compose down

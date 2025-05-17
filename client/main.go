@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strings"
 	"sync"
 
 	pb "github.com/tanihata/grpc-client-side-lb-sandbox/proto"
@@ -32,7 +31,7 @@ func (s *proxyServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.H
 
 func main() {
 	proxyPort := flag.Int("proxy-port", 50050, "The proxy server port")
-	serverPorts := flag.String("server-ports", "50051,50052,50053", "Comma-separated list of server ports")
+	serverAddr := flag.String("server-ports", "server:50051", "Server address (host:port)")
 	flag.Parse()
 
 	// Create proxy server
@@ -40,14 +39,32 @@ func main() {
 		clients: make([]pb.HelloServiceClient, 0),
 	}
 
+	// Resolve server address
+	host, port, err := net.SplitHostPort(*serverAddr)
+	if err != nil {
+		log.Fatalf("invalid server address: %v", err)
+	}
+
+	// Lookup all IP addresses for the host
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		log.Fatalf("failed to lookup host: %v", err)
+	}
+
 	// Connect to all backend servers
-	for _, port := range strings.Split(*serverPorts, ",") {
-		conn, err := grpc.Dial("localhost:"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	for _, ip := range ips {
+		addr := fmt.Sprintf("%s:%s", ip.String(), port)
+		conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			log.Fatalf("failed to connect to server %s: %v", port, err)
+			log.Printf("failed to connect to server %s: %v", addr, err)
+			continue
 		}
 		proxy.clients = append(proxy.clients, pb.NewHelloServiceClient(conn))
-		log.Printf("Connected to server on port %s", port)
+		log.Printf("Connected to server on %s", addr)
+	}
+
+	if len(proxy.clients) == 0 {
+		log.Fatal("no servers available")
 	}
 
 	// Start proxy server

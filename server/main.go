@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"strconv"
 
 	pb "github.com/tanihata/grpc-client-side-lb-sandbox/proto"
 	"google.golang.org/grpc"
@@ -22,7 +24,15 @@ func (s *server) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloR
 }
 
 func main() {
-	port := flag.Int("port", 50051, "The server port")
+	// デフォルトのポート番号
+	defaultPort := 50051
+	if portStr := os.Getenv("SERVER_PORT"); portStr != "" {
+		if port, err := strconv.Atoi(portStr); err == nil {
+			defaultPort = port
+		}
+	}
+
+	port := flag.Int("port", defaultPort, "The server port")
 	flag.Parse()
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))

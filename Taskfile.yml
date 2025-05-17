@@ -15,6 +15,41 @@ tasks:
                    proto/*.proto
           '
 
+  lint:
+    desc: "Run golangci-lint v2 on the codebase"
+    cmds:
+      - |
+        docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:v1.55.2 golangci-lint run -v
+
+  lint:fix:
+    desc: "Run golangci-lint v2 with auto-fix enabled"
+    cmds:
+      - |
+        docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:v1.55.2 golangci-lint run --fix -v
+
+  lint:docker:
+    desc: "Run golangci-lint v2 on server and client code in Docker"
+    cmds:
+      - |
+        docker-compose exec -T proxy sh -c "cd /app && golangci-lint run ./client/... ./server/... -v"
+
+  format:
+    desc: "Format Go code using goimports"
+    cmds:
+      - |
+        docker run --rm -v $(pwd):/app -w /app golang:1.24-alpine sh -c "
+          go install golang.org/x/tools/cmd/goimports@latest && 
+          find . -name '*.go' -not -path './proto/*' | xargs goimports -w"
+
+  format:docker:
+    desc: "Format Go code using goimports in Docker environment"
+    cmds:
+      - |
+        docker-compose exec -T proxy sh -c "
+          cd /app && 
+          go install golang.org/x/tools/cmd/goimports@latest && 
+          find . -name '*.go' -not -path './proto/*' | xargs goimports -w"
+
   server:
     desc: "Start all server instances"
     cmds:

@@ -22,7 +22,7 @@ type server struct {
 }
 
 func (s *server) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloResponse, error) {
-	message := fmt.Sprintf("Hello, %s! (from server %s, IP: %s, port: %d)", 
+	message := fmt.Sprintf("Hello, %s! (from server %s, IP: %s, port: %d)",
 		req.GetName(), s.hostname, s.ipAddr, s.port)
 	return &pb.HelloResponse{Message: message}, nil
 }
@@ -65,14 +65,15 @@ func main() {
 	s := grpc.NewServer()
 	pb.RegisterHelloServiceServer(s, &server{
 		port:     *port,
-		hostname: hostname, 
+		hostname: hostname,
 		ipAddr:   ipAddr,
 	})
+
 	// リフレクションAPIを有効にする
 	reflection.Register(s)
-	
+
 	log.Printf("Server listening on %s (%s):%d", hostname, ipAddr, *port)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
-} 
+}

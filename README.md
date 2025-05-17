@@ -24,6 +24,7 @@
 ├── client/             # クライアント側の実装（プロキシ）
 ├── docker-compose.yml  # Docker環境定義
 ├── Taskfile.yml        # タスク定義
+├── .golangci.yml       # golangci-lint設定ファイル
 └── Dockerfile          # Dockerイメージ定義
 ```
 
@@ -48,6 +49,21 @@ task up
 
 ```bash
 grpcurl -plaintext -d '{"name": "World"}' localhost:50050 hello.HelloService/SayHello
+```
+
+### コード品質チェック
+
+golangci-lint を使用してコード品質をチェックします:
+
+```bash
+# 標準のlintチェック
+task lint
+
+# 自動修正を試みる
+task lint:fix
+
+# Docker環境内でlintを実行
+task lint:docker
 ```
 
 ### ロードバランシングのテスト

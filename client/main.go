@@ -73,7 +73,7 @@ func main() {
 	 client: client,
 	}
 
-	log.Printf("NEEEEEEEE :%d", *proxyPort)
+	log.Printf("NEEEEEEEEw :%d", *proxyPort)
 
 	// プロキシサーバーの起動
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *proxyPort))

@@ -2,14 +2,12 @@ FROM golang:1.24-alpine
 
 WORKDIR /app
 
+# 依存関係のみインストール
 COPY go.mod go.sum ./
-COPY proto ./proto/
-COPY server ./server/
+RUN go mod download
 
-RUN go mod tidy && go mod download
-
-RUN go build -o /server ./server
-
+# サーバーポートを公開
 EXPOSE 50051
 
-CMD ["/server"] 
+# ソースコードはdocker-compose.ymlでボリュームマウントされる
+# 実行コマンドもdocker-compose.ymlで指定される 

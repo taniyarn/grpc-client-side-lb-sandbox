@@ -55,7 +55,6 @@ tasks:
     desc: "Restart all services with fresh builds"
     cmds:
       - task: down
-      - task: rebuild
       - task: up
 
   logs:

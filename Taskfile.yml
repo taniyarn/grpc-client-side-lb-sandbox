@@ -120,3 +120,66 @@ tasks:
     desc: "Check DNS resolution for 'server' hostname"
     cmds:
       - docker-compose exec proxy sh -c "apk add --no-cache bind-tools && dig server"
+
+  simulate-rolling-update:
+    desc: "Simulate a rolling update by restarting server instances one by one"
+    cmds:
+      - |
+        echo "Starting rolling update simulation..."
+        echo "Sending continuous requests in the background..."
+        # 一時ファイルを作成してPIDを保存する方法
+        PIDFILE=$(mktemp)
+
+        # バックグラウンドでリクエストを送信し続ける
+        (while true; do 
+          RESP=$(grpcurl -plaintext -d '{"name": "Continuous"}' localhost:50050 hello.HelloService/SayHello 2>&1)
+          if [ $? -eq 0 ]; then
+            echo -e "\nSuccess: $RESP"
+          else
+            echo -e "\nError: $RESP"
+          fi
+          sleep 0.5
+        done) &
+        echo $! > $PIDFILE
+
+        sleep 10
+
+        # サーバー1をローリング再起動
+        echo -e "\n\nStopping server1..."
+        docker-compose stop server1
+        sleep 5
+        echo "Starting server1..."
+        docker-compose up -d server1
+
+        sleep 10
+
+        # サーバー2をローリング再起動
+        echo -e "\n\nStopping server2..."
+        docker-compose stop server2
+        sleep 5
+        echo "Starting server2..."
+        docker-compose up -d server2
+
+        sleep 10
+
+        # サーバー3をローリング再起動
+        echo -e "\n\nStopping server3..."
+        docker-compose stop server3
+        sleep 5
+        echo "Starting server3..."
+        docker-compose up -d server3
+
+        sleep 10
+
+        # バックグラウンドプロセスを終了
+        echo -e "\n\nFinished rolling update simulation"
+        if [ -f "$PIDFILE" ]; then
+          BG_PID=$(cat $PIDFILE)
+          if ps -p $BG_PID > /dev/null; then
+            kill $BG_PID || true
+            echo "Background process terminated"
+          else
+            echo "Background process already ended"
+          fi
+          rm $PIDFILE
+        fi

@@ -35,3 +35,55 @@ tasks:
     desc: "Stop all services"
     cmds:
       - docker-compose down
+
+  build:
+    desc: "Build Docker images"
+    cmds:
+      - docker-compose build
+
+  rebuild:
+    desc: "Rebuild Docker images without cache"
+    cmds:
+      - docker-compose build --no-cache
+
+  clean:
+    desc: "Remove Docker images, containers, and volumes"
+    cmds:
+      - docker-compose down --rmi all --volumes
+
+  restart:
+    desc: "Restart all services with fresh builds"
+    cmds:
+      - task: down
+      - task: rebuild
+      - task: up
+
+  logs:
+    desc: "Show logs from all services"
+    cmds:
+      - docker-compose logs -f
+
+  logs:server:
+    desc: "Show logs from server instances"
+    cmds:
+      - docker-compose logs -f server
+
+  logs:proxy:
+    desc: "Show logs from proxy server"
+    cmds:
+      - docker-compose logs -f proxy
+
+  follow-logs:
+    desc: "Follow logs from all services in real-time"
+    cmds:
+      - docker-compose logs -f --tail=100
+
+  test:
+    desc: "Send test requests to the proxy server"
+    cmds:
+      - |
+        for i in {1..6}; do 
+          echo "Request $i:"
+          grpcurl -plaintext -d '{"name": "Test'$i'"}' localhost:50050 hello.HelloService/SayHello
+          echo ""
+        done

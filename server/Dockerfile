@@ -6,9 +6,7 @@ COPY go.mod ./
 COPY proto ./proto/
 COPY server ./server/
 
-RUN go get google.golang.org/grpc && \
-    go get google.golang.org/protobuf && \
-    go mod download
+RUN go mod download
 
 RUN go build -o /server ./server
 

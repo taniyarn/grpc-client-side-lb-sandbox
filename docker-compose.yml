@@ -1,15 +1,57 @@
 version: "3"
 
 services:
-  server:
+  # 複数のサーバーインスタンスを作成
+  server1:
     build:
       context: .
       dockerfile: server/Dockerfile
     environment:
       - SERVER_PORT=50051
+      - SERVER_ID=1
     volumes:
       - ./:/app
     command: sh -c "cd /app && go run server/main.go"
+    networks:
+      gRPC_network:
+        aliases:
+          - server
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  server2:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    environment:
+      - SERVER_PORT=50051
+      - SERVER_ID=2
+    volumes:
+      - ./:/app
+    command: sh -c "cd /app && go run server/main.go"
+    networks:
+      gRPC_network:
+        aliases:
+          - server
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  server3:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    environment:
+      - SERVER_PORT=50051
+      - SERVER_ID=3
+    volumes:
+      - ./:/app
+    command: sh -c "cd /app && go run server/main.go"
+    networks:
+      gRPC_network:
+        aliases:
+          - server
     deploy:
       restart_policy:
         condition: on-failure
@@ -26,5 +68,14 @@ services:
     command: sh -c "cd /app && go run client/main.go -proxy-port 50050 -server-addr server:50051"
     ports:
       - "50050:50050"
+    networks:
+      - gRPC_network
     depends_on:
-      - server
+      - server1
+      - server2
+      - server3
+
+# カスタムネットワークを定義
+networks:
+  gRPC_network:
+    driver: bridge

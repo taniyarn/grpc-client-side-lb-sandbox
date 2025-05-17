@@ -16,9 +16,24 @@ tasks:
           '
 
   server:
-    desc: "Start server instances"
+    desc: "Start all server instances"
     cmds:
-      - docker-compose up --scale server=3 -d server
+      - docker-compose up -d server1 server2 server3
+
+  server:1:
+    desc: "Start server instance 1"
+    cmds:
+      - docker-compose up -d server1
+
+  server:2:
+    desc: "Start server instance 2"
+    cmds:
+      - docker-compose up -d server2
+
+  server:3:
+    desc: "Start server instance 3"
+    cmds:
+      - docker-compose up -d server3
 
   client:
     desc: "Start proxy server"
@@ -26,7 +41,7 @@ tasks:
       - docker-compose up -d proxy
 
   up:
-    desc: "Start all services (server and proxy)"
+    desc: "Start all services (server instances and proxy)"
     cmds:
       - task: server
       - task: client
@@ -63,9 +78,24 @@ tasks:
       - docker-compose logs -f
 
   logs:server:
-    desc: "Show logs from server instances"
+    desc: "Show logs from all server instances"
     cmds:
-      - docker-compose logs -f server
+      - docker-compose logs -f server1 server2 server3
+
+  logs:server1:
+    desc: "Show logs from server instance 1"
+    cmds:
+      - docker-compose logs -f server1
+
+  logs:server2:
+    desc: "Show logs from server instance 2"
+    cmds:
+      - docker-compose logs -f server2
+
+  logs:server3:
+    desc: "Show logs from server instance 3"
+    cmds:
+      - docker-compose logs -f server3
 
   logs:proxy:
     desc: "Show logs from proxy server"
@@ -77,12 +107,16 @@ tasks:
     cmds:
       - docker-compose logs -f --tail=100
 
-  test:
-    desc: "Send test requests to the proxy server"
+  verify-lb:
+    desc: "Send multiple requests and verify load balancing is working"
     cmds:
       - |
-        for i in {1..6}; do 
-          echo "Request $i:"
+        echo "Sending 20 requests to verify load balancing..."
+        for i in {1..20}; do 
           grpcurl -plaintext -d '{"name": "Test'$i'"}' localhost:50050 hello.HelloService/SayHello
-          echo ""
         done
+
+  check-dns:
+    desc: "Check DNS resolution for 'server' hostname"
+    cmds:
+      - docker-compose exec proxy sh -c "apk add --no-cache bind-tools && dig server"
